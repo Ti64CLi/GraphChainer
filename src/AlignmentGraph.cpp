@@ -1710,7 +1710,7 @@ struct Treap {
 	}
 };
 
-std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, long long sep_limit) const {
+std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, std::vector<size_t> &Ai, long long sep_limit) const {
 	std::vector<std::pair<size_t, size_t>> cs(A.size()); // {}
 	for (size_t i = 0; i < A.size(); i++) {
 		cs[i].first = component_map[A[i].path.back()]; // component id of anchor path end vertex
@@ -1724,7 +1724,7 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 		aids.clear();
 		for (j = i; j < cs.size() && cs[j].first == cs[i].first; j++)
 			aids.push_back(cs[j].second);
-		tmp = colinearChainingByComponent(cs[i].first, A, aids, sep_limit);
+		tmp = colinearChainingByComponent(cs[i].first, A, Ai, aids, sep_limit);
 		// std::cerr << "cid " << cs[i].first << " " << aids.size() << " / " << A.size() << " : " << tmp.second << std::endl;
 		if (first || tmp.second > best.second) {
 			first = false;
@@ -1735,7 +1735,7 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 	return best.first;
 }
 
-std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &aids, long long sep_limit) const {
+std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const {
 	typedef long long LL;
 	auto getSortedMap = [&](std::vector<LL> a) {
 		std::sort(a.begin(), a.end());
@@ -1795,14 +1795,16 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 			});
 			ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
 			// get local id count
-			std::vector<LL> pos = { 0 };
+			std::vector<LL> pos = {std::numeric_limits<LL>::min(), 0}; // add -inf
 			for (LL j : ids) {
 				pos.push_back(A[j].x - 1);
 				pos.push_back(A[j].x);
 				pos.push_back(A[j].y - 1);
-				pos.push_back(A[j].y);
-				// TODO : update to work with i
+				pos.push_back(A[j].y); // really needed ?
+				pos.push_back(A[j].x - Ai[j]);
+				pos.push_back(A[j].x - Ai[j]);
 			}
+			pos.push_back(std::numeric_limits<LL>::max()); // add +inf
 			auto id_map = getSortedMap(pos);
 			LL Size = (LL)id_map.size();
 			// IndexT tmpT(Size, default_value), tmpI(Size, default_value);
@@ -1816,22 +1818,22 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 					if (q.second!=-1)std::cerr << "C " << j << "updates B " << C[j].first << " " << C[j].second << " <- " << A[j].y + q.first << " " << q.second << std::endl;
 					C[j] = std::max(C[j], {A[j].y + q.first, q.second});
 					// case c
-					q = tmpTc.RMQ(id_map[0], id_map[A[j].x - NodeOffset(A[j].path[0])]);
-					C[j] = std::max(C[j], {A[j].y - A[j].x + 1 + NodeOffset(A[j].path[0]) + q.first, q.second});
+					q = tmpTc.RMQ(id_map[0], id_map[A[j].x - Ai[j]]);
+					C[j] = std::max(C[j], {A[j].y - A[j].x + 1 + Ai[j] + q.first, q.second});
 					// case d
-					q = tmpTd.RMQ(id_map[A[j].x - NodeOffset(A[j].path[0]) + 1], std::numeric_limits<LL>::max());
+					q = tmpTd.RMQ(id_map[A[j].x - Ai[j] + 1], std::numeric_limits<LL>::max());
 					C[j] = std::max(C[j], {A[j].y + 1 + q.first, q.second});
 
 
-					tmpTc.add(id_map[A[j].x - NodeOffset(A[j].path[0])], {C[j].first - (A[j].y - A[j].x + 1) - NodeOffset(A[j].path[0]), j});
-					tmpTd.add(id_map[A[j].x - NodeOffset(A[j].path[0])], {C[j].first - (A[j].y + 1), j});
+					tmpTc.add(id_map[A[j].x - Ai[j]], {C[j].first - (A[j].y - A[j].x + 1) - Ai[j], j});
+					tmpTd.add(id_map[A[j].x - Ai[j]], {C[j].first - (A[j].y + 1), j});
 					
 				}
 				if (component_idx[A[j].path.back()] == v) {
 					tmpT.add(id_map[A[j].y], {C[j].first, j});
 					tmpI.add(id_map[A[j].y], {C[j].first - A[j].y, j});
-					tmpTc.add(id_map[A[j].x - NodeOffset(A[j].path[0])], {default_value.first, j});
-					tmpTd.add(id_map[A[j].x - NodeOffset(A[j].path[0])], {default_value.first, j});
+					tmpTc.add(id_map[A[j].x - Ai[j]], {default_value.first, j});
+					tmpTd.add(id_map[A[j].x - Ai[j]], {default_value.first, j});
 				}
 			}
 		}
@@ -1844,8 +1846,8 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 				for (LL k : paths[cid][v]) {
 					T[k].add(A[j].y, {C[j].first, j});
 					I[k].add(A[j].y, {C[j].first - A[j].y, j});
-					Tc[k].add(A[j].x - NodeOffset(A[j].path.back()), {default_value.first, j});
-					Td[k].add(A[j].x - NodeOffset(A[j].path.back()), {default_value.first, j});
+					Tc[k].add(A[j].x - Ai[j], {default_value.first, j});
+					Td[k].add(A[j].x - Ai[j], {default_value.first, j});
 				}
 		}
 		for (size_t vi = vidx; vi < ridx; vi++) {
@@ -1860,10 +1862,10 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 			// if (q.second!=-1)std::cerr << "C " << j << "updates D " << C[j].first << " " << C[j].second << " <- " << A[j].y + q.first << " " << q.second << std::endl;
 			C[j] = std::max(C[j], {A[j].y + q.first, q.second});
 			// case c
-			q = Tc[k].RMQ(0, A[j].x - NodeOffset(A[j].path[0]));
-			C[j] = std::max(C[j], {A[j].y - A[j].x + 1 + NodeOffset(A[j].path[0]) + q.first, q.second});
+			q = Tc[k].RMQ(std::numeric_limits<LL>::min(), A[j].x - Ai[j]);
+			C[j] = std::max(C[j], {A[j].y - A[j].x + 1 + Ai[j] + q.first, q.second});
 			// case d
-			q = Td[k].RMQ(A[j].x - NodeOffset(A[j].path[0]) + 1, std::numeric_limits<LL>::max());
+			q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<LL>::max());
 			C[j] = std::max(C[j], {A[j].y + 1 + q.first, q.second});
 		}
 	}
