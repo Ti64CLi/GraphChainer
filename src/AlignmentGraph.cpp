@@ -1809,7 +1809,19 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 			LL Size = (LL)id_map.size();
 			// IndexT tmpT(Size, default_value), tmpI(Size, default_value);
 			IndexT tmpT(default_value), tmpI(default_value), tmpTc(default_value), tmpTd(default_value);
+
+			std::vector<std::pair<LL, LL>> M; // compute and sort M according to Algorithm 2
+
 			for (LL j : ids) {
+				M.push_back({A[j].x, j});
+				M.push_back({A[j].y, j});
+			}
+
+			std::sort(M.begin(), M.end());
+
+			for (std::pair<LL, LL> m : M) {
+				LL j = m.second;
+
 				if (component_idx[A[j].path[0]] == v) {
 					std::pair<LL, LL> q = tmpT.RMQ(id_map[0], id_map[A[j].x - 1]); // case a ?
 					if (q.second!=-1)std::cerr << "C " << j << "updates A " << C[j].first << " " << C[j].second << " <- " << A[j].y - A[j].x + 1 + q.first << " " << q.second << std::endl;
