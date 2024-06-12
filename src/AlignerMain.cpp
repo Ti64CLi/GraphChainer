@@ -407,6 +407,7 @@ int main(int argc, char** argv)
 		std::cerr << "Seed extension density can't be negative" << std::endl;
 		paramError = true;
 	}
+	std::cout << "seeding methods : " << params.dynamicRowStart << " " << params.seedFiles.size() << " " << params.mumCount << " " << params.memCount << " " << params.minimizerSeedDensity << std::endl;
 	int pickedSeedingMethods = ((params.dynamicRowStart) ? 1 : 0) + ((params.seedFiles.size() > 0) ? 1 : 0) + ((params.mumCount != 0) ? 1 : 0) + ((params.memCount != 0) ? 1 : 0) + ((params.minimizerSeedDensity != 0) ? 1 : 0);
 	if (params.optimalDijkstra && (params.initialBandwidth > 0))
 	{
@@ -427,7 +428,7 @@ int main(int argc, char** argv)
 		if (params.mumCount > 0) std::cerr << "--optimal-alignment cannot be combined with --seeds-mum-count" << std::endl;
 		if (params.memCount > 0) std::cerr << "--optimal-alignment cannot be combined with --seeds-mem-count" << std::endl;
 		if (params.minimizerSeedDensity > 0) std::cerr << "--optimal-alignment cannot be combined with --seeds-minimizer-density" << std::endl;
-		std::cerr << "pick only one seeding method" << std::endl;
+		std::cerr << "pick only one seeding method (1)" << std::endl;
 		paramError = true;
 	}
 	if (pickedSeedingMethods == 0 && !params.optimalDijkstra)
@@ -437,7 +438,7 @@ int main(int argc, char** argv)
 	}
 	if (pickedSeedingMethods > 1)
 	{
-		std::cerr << "pick only one seeding method" << std::endl;
+		std::cerr << "pick only one seeding method (2)" << std::endl;
 		paramError = true;
 	}
 	if (params.Xdropcutoff > 0 && !params.preciseClipping)
