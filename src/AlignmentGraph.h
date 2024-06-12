@@ -138,7 +138,7 @@ private:
 	void computeMPCIndex(size_t cid, const std::vector<std::vector<size_t>> &pc);
 	bool checkMinPathCover(const std::vector<std::vector<size_t>> &pc);
 	std::pair<std::vector<size_t>, size_t> colinearChainingByComponent(size_t cid, const std::vector<Anchor> &anchors, std::vector<size_t> &anchors_positions, const std::vector<size_t> &aids, long long sep_limit) const;
-	
+	std::pair<std::vector<size_t>, size_t> symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &node_anchors, std::vector<size_t> &node_anchors_offsets, const std::vector<size_t> &aids, long long sep_limit) const;
 
 
 

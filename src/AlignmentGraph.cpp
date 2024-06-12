@@ -1724,7 +1724,7 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 		aids.clear();
 		for (j = i; j < cs.size() && cs[j].first == cs[i].first; j++)
 			aids.push_back(cs[j].second);
-		tmp = colinearChainingByComponent(cs[i].first, A, Ai, aids, sep_limit);
+		tmp = symmetricColinearChainingByComponent(cs[i].first, A, Ai, aids, sep_limit);
 		// std::cerr << "cid " << cs[i].first << " " << aids.size() << " / " << A.size() << " : " << tmp.second << std::endl;
 		if (first || tmp.second > best.second) {
 			first = false;
@@ -1733,6 +1733,19 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 		i = j;
 	}
 	return best.first;
+}
+
+std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const {
+	// preprocess anchors
+	std::vector<Anchor> node_A;
+	std::vector<size_t> node_Ai;
+	// TODO
+
+	// for now
+	node_A = A;
+	node_Ai = Ai;
+
+	return colinearChainingByComponent(cid, node_A, node_Ai, aids, sep_limit);
 }
 
 std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const {
@@ -1817,7 +1830,13 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 				M.push_back({A[j].y, j});
 			}
 
-			std::sort(M.begin(), M.end());
+			std::sort(M.begin(), M.end(), [&](std::pair<LL, LL> A_i, std::pair<LL, LL> A_j) {
+				if (A_i.first != A_j.first) {
+					return A_i.first < A_j.first;
+				}
+
+				return A_i.second < A_j.second;
+			});
 
 			for (std::pair<LL, LL> m : M) {
 				LL j = m.second;
