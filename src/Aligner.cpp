@@ -746,11 +746,10 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 						if (trace.size() == 0)
 							continue;
 
-						size_t anchorOffset = l;
-						AlignmentGraph::Anchor anchor = {{}, anchorOffset, anchorOffset};
-						size_t previousJ = 0;
+						size_t anchorStartJ = 0;
+						AlignmentGraph::Anchor anchor = {{}, l, l};
 
-						std::cout << "Anchor's trace [" << l << "-" << l + len - 1 << "] :" << std::endl;
+						std::cout << "Anchor [" << l << "-" << l + len - 1 << "] :" << std::endl;
 						std::cout << "Trace [" << l << "-" << l + trace.size() - 1 << "] :" << std::endl;
 
 						for (size_t j = 0; j < trace.size(); j++) {
@@ -759,49 +758,45 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 							node = alignmentGraph.GetUnitigNode(node, nodeOffset);
 
 							if (anchor.path.empty() || anchor.path.back() != node) { // new node encountered
-								std::cout << "\tNew node encountered : " << node << " (j = " << j << " previousJ = " << previousJ << ")" << std::endl;
+								std::cout << "\tNew node encountered : " << node << " (j = " << j << " anchor start J = " << anchorStartJ << ")" << std::endl;
 
 								if (!anchor.path.empty()) {
-									anchor.y = anchor.x + (j - previousJ) - 1; // update current anchor
-
-									A.push_back(anchor); // expand list with current anchor
-									Apos.push_back({trace[previousJ], trace[j - 1]}); // add current anchor positions
+									Apos.push_back({trace[anchorStartJ], trace[j - 1]}); // add current anchor positions
 
 									for (size_t m = 0; m < Apos.back().size(); m++) { // update position
 										AlignmentGraph::MatrixPosition &p = Apos.back()[m].DPposition;
-										p.seqPos += anchor.x;
+										p.seqPos += l;
 										p.node = alignmentGraph.GetUnitigNode(p.node, p.nodeOffset);
 										p.nodeOffset -= alignmentGraph.NodeOffset(p.node);
 									}
 
+									anchor.x = Apos.back()[0].DPposition.seqPos;
+									anchor.y = Apos.back()[1].DPposition.seqPos;
+									A.push_back(anchor); // expand list with current anchor
 									Ai.push_back(Apos.back()[0].DPposition.nodeOffset); // add anchor start position in node
 
 									std::cout << "\t-> Previous anchor summary : A.x=" << anchor.x << " A.y=" << anchor.y << " A.path (len=" << anchor.path.size() << ")=" << anchor.path.back() << " A.i=" << Ai.back() << std::endl;
 
-									anchorOffset += (j - previousJ); // update start of new anchor
-									previousJ = j;
+									anchorStartJ = j;
 								}
 
 								anchor.path.clear(); // create new anchor
 								anchor.path.push_back(node);
-								anchor.x = anchorOffset;
 							}
 						}
 
-						std::cout << "\tpreviousJ = " << previousJ << " trace size = " << trace.size() << std::endl;
-
-						anchor.y = l + len - 1; //anchor.x + (trace.size() - previousJ) - 1; // process last anchor
-
-						A.push_back(anchor);
-						Apos.push_back({ trace[previousJ], trace.back() });
+						Apos.push_back({ trace[anchorStartJ], trace.back() });
 
 						for (size_t j = 0; j < Apos.back().size(); j++) {
 							AlignmentGraph::MatrixPosition &p = Apos.back()[j].DPposition;
-							p.seqPos += anchor.x;
+							p.seqPos += l;
 							p.node = alignmentGraph.GetUnitigNode(p.node, p.nodeOffset);
 							p.nodeOffset -= alignmentGraph.NodeOffset(p.node);
 						}
 
+						anchor.x = Apos.back()[0].DPposition.seqPos;
+						anchor.y = Apos.back()[1].DPposition.seqPos;
+						A.push_back(anchor);
 						Ai.push_back(Apos.back()[0].DPposition.nodeOffset);
 
 						std::cout << "\t-> Previous anchor summary : A.x=" << anchor.x << " A.y=" << anchor.y << " A.path (len=" << anchor.path.size() << ")=" << anchor.path.back() << " A.i=" << Ai.back() << std::endl;
