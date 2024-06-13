@@ -761,7 +761,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 							if (anchor.path.empty() || anchor.path.back() != node) { // new node encountered
 								std::cout << "\tNew node encountered : " << node << " (j = " << j << " previousJ = " << previousJ << ")" << std::endl;
 
-								if (j != 0) {
+								if (!anchor.path.empty()) {
 									anchor.y = anchor.x + (j - previousJ) - 1; // update current anchor
 
 									A.push_back(anchor); // expand list with current anchor
