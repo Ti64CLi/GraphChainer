@@ -751,6 +751,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 						size_t previousJ = 0;
 
 						std::cout << "Anchor's trace [" << l << "-" << l + len - 1 << "] :" << std::endl;
+						std::cout << "Trace [" << l << "-" << l + trace.size() - 1 << "] :" << std::endl;
 
 						for (size_t j = 0; j < trace.size(); j++) {
 							size_t node = trace[j].DPposition.node;
@@ -758,7 +759,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 							node = alignmentGraph.GetUnitigNode(node, nodeOffset);
 
 							if (anchor.path.empty() || anchor.path.back() != node) { // new node encountered
-								std::cout << "\tNew node encountered : " << node << std::endl;
+								std::cout << "\tNew node encountered : " << node << " (j = " << j << " previousJ = " << previousJ << ")" << std::endl;
 
 								if (j != 0) {
 									anchor.y = anchor.x + (j - previousJ) - 1; // update current anchor
@@ -787,7 +788,9 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 							}
 						}
 
-						anchor.y = anchor.x + (trace.size() - previousJ) - 1; // process last anchor
+						std::cout << "\tpreviousJ = " << previousJ << " trace size = " << trace.size() << std::endl;
+
+						anchor.y = l + len - 1; //anchor.x + (trace.size() - previousJ) - 1; // process last anchor
 
 						A.push_back(anchor);
 						Apos.push_back({ trace[previousJ], trace.back() });
