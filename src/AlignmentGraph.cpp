@@ -1734,6 +1734,122 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 	return best.first;
 }
 
+std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const {
+	const std::vector<size_t> &cids = components_ids[cid]; // nodes in the current component
+	size_t N = cids.size(); // size of the component
+	long long K = mpc[cid].size(); // number of path in the path cover
+
+	std::pair<long long, long long> default_value = {-N*2, -1}; // default value in the balanced binary tree search
+	for (size_t j : aids) {
+		default_value.first -= (A[j].y + 1 - A[j].x) * 2; // default_value -= 2 * kappa[j] where kappa[j] = kappa for anchor j
+	}
+	// defaul_value should now correspond to -inf, meaning be lower than all possible added later values
+
+	typedef Treap<long long, std::pair<long long, long long>> IndexT; // search tree type
+
+	std::vector<IndexT> Ta(K, IndexT(default_value)), Tb(K, IndexT(default_value)), Tc(K, IndexT(default_value)), Td(K, IndexT(default_value)); // search tree for each case a, b, c and d in the paper
+	std::vector<std::pair<long long, std::pair<long long, long long>>> endpoints;
+	std::vector<std::pair<long long, long long>> C(A.size());
+
+	for (size_t j : aids) {
+		endpoints.push_back({component_idx[A[j].path[0]], {j, -1}});
+
+		/*for (std::pair<long long, long long> b : backwards[cid][component_idx[A[j].path[0]]]) { // not sure what it does yet
+			endpoints.push_back({b.first, {j, b.second}});
+		}*/
+
+		C[j] = {A[j].y - A[j].x + 1, -1}; // initialize C[j] at kappa for each anchor
+	}
+
+	// sort vertices by topological order
+	std::sort(endpoints.begin(), endpoints.end(), [&](const std::pair<long long, std::pair<long long, long long>> &p1, const std::pair<long long, std::pair<long long, long long>> &p2) {
+		return topo_ids[cid][p1.first] < topo_ids[cid][p2.first];
+	});
+
+	for (long long vidx = 0; vidx < endpoints.size(); vidx++) {
+		long long v = endpoints[vidx].first; // node v
+
+		std::vector<std::pair<long long, long long>> M;
+		for (size_t j : aids) {
+			if (component_idx[A[j].path[0]] == v) { // for j in anchors[v]
+				M.push_back({A[j].x, j});
+				M.push_back({A[j].y, j});
+			}
+		}
+		// sort M
+		std:.sort(M.begin(), M.end(), [&](const std::pair<long long, long long> &p1, const std::pair<long long, long long> &p2) {
+			if (p1.first == p2.first) {
+				return p1.second < p2.second;
+			}
+
+			return p1.first < p2.first;
+		});
+
+		for (long long k : paths[cid][v]) {
+			for (std::pair<long long, long long> m : M) {
+				long long x = m.first, j = m.second;
+				long long kappa = A[j].y - A[j].x + 1;
+				if (x == A[j].x) {
+					std::pair<long long, long long> q = Ta[k].RMQ(0, A[j].x - 1); // case a
+					std::pair<long long, long long> Cmj = q;
+					q = Tb[k].RMQ(A[j].x, A[j].y); // case b
+					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});
+					q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - Ai[j]); // case c
+					Cmj = std::max(Cmj, {Ai[j] + q.first, q.second});
+					q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
+					Cmj = std::max(Cmj, {A[j].x + q.first, q.second}); // Cmj = C^-[j]
+					C[j] = std::max(C[j], {Cmj.first + kappa, Cmj.second});
+
+					Tc[k].add(A[j].x - Ai[j], {C[j].first - kappa - Ai[j], j});
+					Td[k].add(A[j].x - Ai[j], {C[j].first - kappa - A[j].x, j});
+				} else {
+					Ta[k].add(A[j].y, {C[j].first, j});
+					Tb[k].add(A[j].y, {C[j].first - kappa - A[j].x, j});
+					Tc[k].add(A[j].x - Ai[j], {std::numeric_limits<long long>:min(), j});
+					Td[k].add(A[j].x - Ai[j], {std::numeric_limits<long long>:min(), j});
+				}
+			}
+		}
+
+		// execute PROPAGATE FORWARD subroutine
+		// maybe need to be topologically sorted ?
+		for (std::pair<long long, long long> b : backwards[cid][v]) {
+			long long w = b.first, k = b.second;
+			// compute anchors[w]
+			for (size_t j : aids) {
+				if (component_idx[A[j].path[0]] == w) { // j in anchors[w]
+					std::pair<long long, long long> q = Ta[k].RMQ(0, A[j].x - 1); // case a
+					std::pair<long long, long long> Cmj = q;
+					q = Tb[k].RMQ(A[j].x, A[j].y); // case b
+					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});
+					// needed for propagate forward ??
+					/*q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - Ai[j]); // case c
+					Cmj = std::max(Cmj, {Ai[j] + q.first, q.second});
+					q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
+					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});*/
+					C[j] = std::max(C[j], {Cmj.first + A[j].y - A[j].x + 1, Cmj.second}); // => Cmj + kappa
+				}
+			}
+		}
+	}
+
+	std::pair<long long, long long> best = {0, -1};
+	for (size_t j : aids)
+		best = std::max(best, {C[j].first, j});
+
+	std::vector<size_t> ret;
+	for (long long i = best.second; i != -1; i = C[i].second) {
+		ret.push_back(i);
+		if (i == C[i].second) {
+			std::cerr << "[ERROR] loops in C[" << i << "] : {" << C[i].first << ", "  << C[i].second << "}" << std::endl;
+			break;
+		}
+	}
+	std::reverse(ret.begin(), ret.end());
+	return {ret, best.first};
+
+}
+
 std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &aids, long long sep_limit) const {
 	typedef long long LL;
 	auto getSortedMap = [&](std::vector<LL> a) {
