@@ -298,6 +298,7 @@ public:
 	{
 		typedef long long LL;
 		std::vector<AlignmentGraph::Anchor> A;
+		std::vector<size_t> Ai;
 		
 		for (size_t i = 0; i < seedHits.size(); i++)
 		{
@@ -326,9 +327,10 @@ public:
 			}
 			
 			A.push_back({ {nodeIndex}, seedHits[i].seqPos, seedHits[i].seqPos + seedHits[i].matchLen - 1 });
+			Ai.push_back(realOffset);
 		}
 
-		std::vector<size_t> ret = params.graph.colinearChaining(A, -1);
+		std::vector<size_t> ret = params.graph.colinearChaining(A, Ai, -1, true);
 		std::vector<SeedHit> tmp;
 		for (LL i : ret)
 			tmp.push_back(seedHits[i]);
