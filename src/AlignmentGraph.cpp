@@ -1735,7 +1735,7 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 }
 
 std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const {
-	const std::vector<size_t> &cids = components_ids[cid]; // nodes in the current component
+	const std::vector<size_t> &cids = component_ids[cid]; // nodes in the current component
 	size_t N = cids.size(); // size of the component
 	long long K = mpc[cid].size(); // number of path in the path cover
 
@@ -1777,7 +1777,7 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 			}
 		}
 		// sort M
-		std:.sort(M.begin(), M.end(), [&](const std::pair<long long, long long> &p1, const std::pair<long long, long long> &p2) {
+		std::sort(M.begin(), M.end(), [&](const std::pair<long long, long long> &p1, const std::pair<long long, long long> &p2) {
 			if (p1.first == p2.first) {
 				return p1.second < p2.second;
 			}
@@ -1794,7 +1794,7 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 					std::pair<long long, long long> Cmj = q;
 					q = Tb[k].RMQ(A[j].x, A[j].y); // case b
 					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});
-					q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - Ai[j]); // case c
+					q = Tc[k].RMQ(default_value.first, A[j].x - Ai[j]); // case c
 					Cmj = std::max(Cmj, {Ai[j] + q.first, q.second});
 					q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
 					Cmj = std::max(Cmj, {A[j].x + q.first, q.second}); // Cmj = C^-[j]
@@ -1805,8 +1805,8 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 				} else {
 					Ta[k].add(A[j].y, {C[j].first, j});
 					Tb[k].add(A[j].y, {C[j].first - kappa - A[j].x, j});
-					Tc[k].add(A[j].x - Ai[j], {std::numeric_limits<long long>:min(), j});
-					Td[k].add(A[j].x - Ai[j], {std::numeric_limits<long long>:min(), j});
+					Tc[k].add(A[j].x - Ai[j], {default_value.first, j});
+					Td[k].add(A[j].x - Ai[j], {default_value.first, j});
 				}
 			}
 		}
@@ -1823,10 +1823,10 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 					q = Tb[k].RMQ(A[j].x, A[j].y); // case b
 					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});
 					// needed for propagate forward ??
-					/*q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - Ai[j]); // case c
+					q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - Ai[j]); // case c
 					Cmj = std::max(Cmj, {Ai[j] + q.first, q.second});
 					q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
-					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});*/
+					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});
 					C[j] = std::max(C[j], {Cmj.first + A[j].y - A[j].x + 1, Cmj.second}); // => Cmj + kappa
 				}
 			}
