@@ -1709,7 +1709,7 @@ struct Treap {
 	}
 };
 
-std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, long long sep_limit) const {
+std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, const std::vector<size_t> &Ai, long long sep_limit, std::bool symmetric_chaining = false) const {
 	std::vector<std::pair<size_t, size_t>> cs(A.size());
 	for (size_t i = 0; i < A.size(); i++) {
 		cs[i].first = component_map[A[i].path.back()];
@@ -1723,7 +1723,14 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 		aids.clear();
 		for (j = i; j < cs.size() && cs[j].first == cs[i].first; j++)
 			aids.push_back(cs[j].second);
-		tmp = colinearChainingByComponent(cs[i].first, A, aids, sep_limit);
+		
+		if (symmetric_chaining) {
+			std::cout << "Using symmetric chaining" << std::endl;
+			tmp = symmetricColinearChainingByComponent(cs[i].first, A, Ai, aids, sep_limit);
+		} else {
+			std::cout << "Using asymmetric chaining" << std::endl;
+			tmp = colinearChainingByComponent(cs[i].first, A, aids, sep_limit);
+		}
 		// std::cerr << "cid " << cs[i].first << " " << aids.size() << " / " << A.size() << " : " << tmp.second << std::endl;
 		if (first || tmp.second > best.second) {
 			first = false;

@@ -657,6 +657,8 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 				// start spliting long reads into short reads for anchors
 				std::vector<AlignmentGraph::Anchor> A;
 				std::vector<std::vector<GraphAlignerCommon<size_t, int32_t, uint64_t>::TraceItem>> Apos;
+				std::vector<size_t> Ai;
+
 				std::vector<SeedHit> seeds = seeder.getSeeds(fastq->seq_id, fastq->sequence);
 				if (seeds.size() == 0)
 					continue;
@@ -762,7 +764,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 									anchor.x = Apos.back()[0].DPposition.seqPos;
 									anchor.y = Apos.back()[1].DPposition.seqPos;
 									A.push_back(anchor); // expand list with current anchor
-									//Ai.push_back(Apos.back()[0].DPposition.nodeOffset); // add anchor start position in node
+									Ai.push_back(Apos.back()[0].DPposition.nodeOffset); // add anchor start position in node
 
 									std::cout << "\t-> Previous anchor summary : A.x=" << anchor.x << " A.y=" << anchor.y << " A.path (len=" << anchor.path.size() << ")=" << anchor.path.back() << " A.i=" << Apos.back()[0].DPposition.nodeOffset << std::endl;
 
@@ -786,7 +788,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 						anchor.x = Apos.back()[0].DPposition.seqPos;
 						anchor.y = Apos.back()[1].DPposition.seqPos;
 						A.push_back(anchor);
-						//Ai.push_back(Apos.back()[0].DPposition.nodeOffset);
+						Ai.push_back(Apos.back()[0].DPposition.nodeOffset);
 
 						std::cout << "\t-> Previous anchor summary : A.x=" << anchor.x << " A.y=" << anchor.y << " A.path (len=" << anchor.path.size() << ")=" << anchor.path.back() << " A.i=" << Apos.back()[0].DPposition.nodeOffset << std::endl;
 					}
@@ -795,7 +797,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 				auto anchorsms = std::chrono::duration_cast<std::chrono::milliseconds>(anchorsEnd - anchorsStart).count();
 				// cerroutput << short_id << " : chaining " << A.size() << " anchors" << BufferedWriter::Flush;
 				auto clcStart = std::chrono::system_clock::now();
-				std::vector<size_t> ids = alignmentGraph.colinearChaining(A, params.colinearGap);
+				std::vector<size_t> ids = alignmentGraph.colinearChaining(A, Ai, params.colinearGap, true);
 				auto clcEnd = std::chrono::system_clock::now();
 				auto clcms = std::chrono::duration_cast<std::chrono::milliseconds>(clcEnd - clcStart).count();
 				alignments.alignments.clear();
