@@ -201,7 +201,7 @@ int main(int argc, char** argv)
 	if (params.colinearChaining)
 	{
 		params.alignmentSelectionMethod = AlignmentSelection::SelectionMethod::All;
-		params.tryAllSeeds = true;
+		params.tryAllSeeds = false; // true
 		params.colinearGap = 10000;
 		params.colinearSplitLen = 35;
 		params.colinearSplitGap = 35;
