@@ -1807,6 +1807,8 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 					Cmj = std::max(Cmj, {A[j].x + q.first, q.second}); // Cmj = C^-[j]
 					C[j] = std::max(C[j], {Cmj.first + kappa, Cmj.second});
 
+					std::cout << "-> For node " << v << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
+
 					Tc[k].add(A[j].x - Ai[j], {C[j].first - kappa - Ai[j], j});
 					Td[k].add(A[j].x - Ai[j], {C[j].first - kappa - A[j].x, j});
 				} else {
@@ -1820,6 +1822,7 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 
 		// execute PROPAGATE FORWARD subroutine
 		// maybe need to be topologically sorted ?
+		std::cout << "Propagating forward..." << std::endl;
 		for (std::pair<long long, long long> b : backwards[cid][v]) {
 			long long w = b.first, k = b.second;
 			// compute anchors[w]
@@ -1835,17 +1838,23 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 					q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
 					Cmj = std::max(Cmj, {A[j].x + q.first, q.second});
 					C[j] = std::max(C[j], {Cmj.first + A[j].y - A[j].x + 1, Cmj.second}); // => Cmj + kappa
+
+					std::cout << "-> For node " << w << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
 				}
 			}
 		}
 	}
 
+	std::cout << "Computing best..." << std::endl;
 	std::pair<long long, long long> best = {0, -1};
 	for (size_t j : aids)
 		best = std::max(best, {C[j].first, j});
+	std::cout << "Found : C[" << best.second << "] = {" << best.first << ", " << C[best.second].second << "}" << std::endl;
 
 	std::vector<size_t> ret;
+	std::cout << "Going through best path..." << std::endl;
 	for (long long i = best.second; i != -1; i = C[i].second) {
+		std::cout << "-> From C[" << i << "] (" << C[i].first << ") to C[" << C[i].second << "]" << std::endl;
 		ret.push_back(i);
 		if (i == C[i].second) {
 			std::cerr << "[ERROR] loops in C[" << i << "] : {" << C[i].first << ", "  << C[i].second << "}" << std::endl;
