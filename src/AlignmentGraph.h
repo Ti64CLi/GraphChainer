@@ -118,7 +118,7 @@ public:
 	void loadMPC(const std::string &filename);
 	void saveMPC(const std::string &filename);
 	std::vector<size_t> generatePath(const std::string &seq_out, const std::string &path_out, const size_t seed = 0);
-	std::vector<size_t> colinearChaining(const std::vector<Anchor> &anchors, const std::vector<size_t> &anchors_node_offsets, long long sep_limit, std::bool using_symmetric_chaining) const;
+	std::vector<size_t> colinearChaining(const std::vector<Anchor> &anchors, const std::vector<size_t> &anchors_node_offsets, long long sep_limit, bool using_symmetric_chaining) const;
 	std::vector<size_t> getChainPath(size_t s, size_t t, long long sep_limit) const;
 
 private:

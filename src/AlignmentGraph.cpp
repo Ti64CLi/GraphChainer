@@ -1709,7 +1709,7 @@ struct Treap {
 	}
 };
 
-std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, const std::vector<size_t> &Ai, long long sep_limit, std::bool symmetric_chaining = false) const {
+std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, const std::vector<size_t> &Ai, long long sep_limit, bool symmetric_chaining = false) const {
 	std::vector<std::pair<size_t, size_t>> cs(A.size());
 	for (size_t i = 0; i < A.size(); i++) {
 		cs[i].first = component_map[A[i].path.back()];
