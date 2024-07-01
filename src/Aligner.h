@@ -51,6 +51,7 @@ struct AlignerParams
 	bool cigarMatchMismatchMerge;
 
 	bool colinearChaining;
+	bool symmetricColinearChaining;
 	bool generatePath;
 	bool graphStatistics;
 	long long generatePathSeed;

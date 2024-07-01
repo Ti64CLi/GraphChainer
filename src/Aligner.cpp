@@ -749,7 +749,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 							node = alignmentGraph.GetUnitigNode(node, nodeOffset);
 
 							if (anchor.path.empty() || anchor.path.back() != node) { // new node encountered
-								std::cout << "\tNew node encountered : " << node << " (j = " << j << " anchor start J = " << anchorStartJ << ")" << std::endl;
+								std::cout << "\tNew node encountered : " << node << " (original node = " << trace[j].DPposition.node << ") => current j = " << j << " and anchor start J = " << anchorStartJ << std::endl;
 
 								if (!anchor.path.empty()) {
 									Apos.push_back({trace[anchorStartJ], trace[j - 1]}); // add current anchor positions
@@ -797,7 +797,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 				auto anchorsms = std::chrono::duration_cast<std::chrono::milliseconds>(anchorsEnd - anchorsStart).count();
 				// cerroutput << short_id << " : chaining " << A.size() << " anchors" << BufferedWriter::Flush;
 				auto clcStart = std::chrono::system_clock::now();
-				std::vector<size_t> ids = alignmentGraph.colinearChaining(A, Ai, params.colinearGap, true);
+				std::vector<size_t> ids = alignmentGraph.colinearChaining(A, Ai, params.colinearGap, params.symmetricColinearChaining);
 				auto clcEnd = std::chrono::system_clock::now();
 				auto clcms = std::chrono::duration_cast<std::chrono::milliseconds>(clcEnd - clcStart).count();
 				alignments.alignments.clear();

@@ -106,6 +106,7 @@ int main(int argc, char** argv)
 		("greedy-E", "greedily select a non-overlapping alignment set based on E-value")
 		("greedy-score", "greedily select a non-overlapping alignment set based on alignment score")
 		("no-colinear-chaining", "do not run colinear chaining and align as in GraphAligner, default parameters")
+		("symmetric-colinear-chaining", "use the symmetric verion of colinear chainin (default is asymmetric)")
 	;
 
 	boost::program_options::options_description cmdline_options;
@@ -174,6 +175,7 @@ int main(int argc, char** argv)
 	params.DPRestartStride = 0;
 	params.cigarMatchMismatchMerge = false;
 	params.colinearChaining = true;
+	params.symmetricColinearChaining = false;
 	params.generatePath = false;
 	params.generatePathSeed = 0;
 	params.IndexMpcFile = "";
@@ -200,8 +202,11 @@ int main(int argc, char** argv)
 
 	if (params.colinearChaining)
 	{
+		if (vm.count("symmetric-colinear-chaining")) {
+			params.symmetricColinearChaining = true;
+		}
 		params.alignmentSelectionMethod = AlignmentSelection::SelectionMethod::All;
-		params.tryAllSeeds = false; // true
+		params.tryAllSeeds = true;
 		params.colinearGap = 10000;
 		params.colinearSplitLen = 35;
 		params.colinearSplitGap = 35;
