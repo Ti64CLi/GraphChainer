@@ -657,7 +657,6 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 				// start spliting long reads into short reads for anchors
 				std::vector<AlignmentGraph::Anchor> A;
 				std::vector<std::vector<GraphAlignerCommon<size_t, int32_t, uint64_t>::TraceItem>> Apos;
-				std::vector<size_t> Ai;
 
 				std::vector<SeedHit> seeds = seeder.getSeeds(fastq->seq_id, fastq->sequence);
 				if (seeds.size() == 0)
@@ -730,31 +729,36 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 						}
 					}*/
 					for (size_t i = 0; i < alignments.alignments.size(); i++) {
-						AlignmentResult::AlignmentItem& alignment = alignments.alignments[i];
-						if (alignment.alignmentFailed())
+						AlignmentResult::AlignmentItem &alignment = alignments.alignments[i];
+						if (alignment.alignmentFailed()) {
 							continue;
+						}
+
 						auto trace = alignment.trace->trace;
-						if (trace.size() == 0)
+						if (trace.size() == 0) {
 							continue;
+						}
 
 						size_t anchorStartJ = 0;
-						AlignmentGraph::Anchor anchor = {{}, l, l};
-
-						std::cout << "Anchor [" << l << "-" << l + len - 1 << "] :" << std::endl;
-						std::cout << "Trace [" << l << "-" << l + trace.size() - 1 << "] :" << std::endl;
-
+						size_t previousNodeOffset = 0;
+						size_t previousSeqPos = 0;
+						AlignmentGraph::Anchor anchor = {{}, l, l, 0, 0};
 						for (size_t j = 0; j < trace.size(); j++) {
 							size_t node = trace[j].DPposition.node;
 							size_t nodeOffset = trace[j].DPposition.nodeOffset;
+							size_t seqPos = trace[j].DPposition.seqPos;
 							node = alignmentGraph.GetUnitigNode(node, nodeOffset);
 
-							if (anchor.path.empty() || anchor.path.back() != node) { // new node encountered
-								std::cout << "\tNew node encountered : " << node << " (original node = " << trace[j].DPposition.node << ") => current j = " << j << " and anchor start J = " << anchorStartJ << std::endl;
-
-								if (!anchor.path.empty()) {
-									Apos.push_back({trace[anchorStartJ], trace[j - 1]}); // add current anchor positions
-
-									for (size_t m = 0; m < Apos.back().size(); m++) { // update position
+							if (
+								anchor.path.empty() || // first anchor (should be equivalent to j == 0)
+								anchor.path[0] != node || // new node
+								previousNodeOffset == nodeOffset || // same offset in the graph
+								previousSeqPos == seqPos // same offset in the sequence
+							) {
+								// start a new anchor
+								if (j != 0) {
+									Apos.push_back({trace[anchorStartJ], trace[j - 1]});
+									for (size_t m = 0; m < Apos.back().size(); m++) {
 										AlignmentGraph::MatrixPosition &p = Apos.back()[m].DPposition;
 										p.seqPos += l;
 										p.node = alignmentGraph.GetUnitigNode(p.node, p.nodeOffset);
@@ -763,23 +767,26 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 
 									anchor.x = Apos.back()[0].DPposition.seqPos;
 									anchor.y = Apos.back()[1].DPposition.seqPos;
-									A.push_back(anchor); // expand list with current anchor
-									Ai.push_back(Apos.back()[0].DPposition.nodeOffset); // add anchor start position in node
+									anchor.i = Apos.back()[0].DPposition.nodeOffset;
+									anchor.j = Apos.back()[1].DPposition.nodeOffset;
+									A.push_back(anchor);
 
-									std::cout << "\t-> Previous anchor summary : A.x=" << anchor.x << " A.y=" << anchor.y << " A.path (len=" << anchor.path.size() << ")=" << anchor.path.back() << " A.i=" << Apos.back()[0].DPposition.nodeOffset << std::endl;
-
-									anchorStartJ = j;
+									assert(anchor.path.size() == 1);
+									std::cout << "New anchor on node " << anchor.path[0] << " : x = " << anchor.x << " y = " << anchor.y << " i = " << anchor.i << " j = " << anchor.j << std::endl;
 								}
 
-								anchor.path.clear(); // create new anchor
+								anchor.path.clear();
 								anchor.path.push_back(node);
+								anchorStartJ = j;
 							}
+
+							previousNodeOffset = nodeOffset;
+							previousSeqPos = seqPos;
 						}
 
-						Apos.push_back({ trace[anchorStartJ], trace.back() });
-
-						for (size_t j = 0; j < Apos.back().size(); j++) {
-							AlignmentGraph::MatrixPosition &p = Apos.back()[j].DPposition;
+						Apos.push_back({trace[anchorStartJ], trace.back()});
+						for (size_t m = 0; m < Apos.back().size(); m++) {
+							AlignmentGraph::MatrixPosition &p = Apos.back()[m].DPposition;
 							p.seqPos += l;
 							p.node = alignmentGraph.GetUnitigNode(p.node, p.nodeOffset);
 							p.nodeOffset -= alignmentGraph.NodeOffset(p.node);
@@ -787,17 +794,19 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 
 						anchor.x = Apos.back()[0].DPposition.seqPos;
 						anchor.y = Apos.back()[1].DPposition.seqPos;
+						anchor.i = Apos.back()[0].DPposition.nodeOffset;
+						anchor.j = Apos.back()[1].DPposition.nodeOffset;
 						A.push_back(anchor);
-						Ai.push_back(Apos.back()[0].DPposition.nodeOffset);
 
-						std::cout << "\t-> Previous anchor summary : A.x=" << anchor.x << " A.y=" << anchor.y << " A.path (len=" << anchor.path.size() << ")=" << anchor.path.back() << " A.i=" << Apos.back()[0].DPposition.nodeOffset << std::endl;
+						assert(anchor.path.size() == 1);
+						std::cout << "New anchor on node " << anchor.path[0] << " : x = " << anchor.x << " y = " << anchor.y << " i = " << anchor.i << " j = " << anchor.j << std::endl;
 					}
 				}
 				auto anchorsEnd = std::chrono::system_clock::now();
 				auto anchorsms = std::chrono::duration_cast<std::chrono::milliseconds>(anchorsEnd - anchorsStart).count();
 				// cerroutput << short_id << " : chaining " << A.size() << " anchors" << BufferedWriter::Flush;
 				auto clcStart = std::chrono::system_clock::now();
-				std::vector<size_t> ids = alignmentGraph.colinearChaining(A, Ai, params.colinearGap, params.symmetricColinearChaining);
+				std::vector<size_t> ids = alignmentGraph.colinearChaining(A, params.colinearGap, params.symmetricColinearChaining);
 				auto clcEnd = std::chrono::system_clock::now();
 				auto clcms = std::chrono::duration_cast<std::chrono::milliseconds>(clcEnd - clcStart).count();
 				alignments.alignments.clear();

@@ -112,13 +112,14 @@ public:
 	struct Anchor {
 		std::vector<size_t> path;
 		size_t x, y;
+		size_t i, j;
 	};
 	void buildMPC();
 	void buildComponentsMap();
 	void loadMPC(const std::string &filename);
 	void saveMPC(const std::string &filename);
 	std::vector<size_t> generatePath(const std::string &seq_out, const std::string &path_out, const size_t seed = 0);
-	std::vector<size_t> colinearChaining(const std::vector<Anchor> &anchors, const std::vector<size_t> &anchors_node_offsets, long long sep_limit, bool using_symmetric_chaining) const;
+	std::vector<size_t> colinearChaining(const std::vector<Anchor> &anchors, long long sep_limit, bool using_symmetric_chaining) const;
 	std::vector<size_t> getChainPath(size_t s, size_t t, long long sep_limit) const;
 
 private:
@@ -137,7 +138,7 @@ private:
 	std::vector<std::vector<size_t>> shrink(size_t cid, const std::vector<std::vector<size_t>> &pc);
 	void computeMPCIndex(size_t cid, const std::vector<std::vector<size_t>> &pc);
 	bool checkMinPathCover(const std::vector<std::vector<size_t>> &pc);
-	std::pair<std::vector<size_t>, size_t> symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &anchors, const std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const;
+	std::pair<std::vector<size_t>, size_t> symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &anchors, const std::vector<size_t> &aids, long long sep_limit) const;
 	std::pair<std::vector<size_t>, size_t> colinearChainingByComponent(size_t cid, const std::vector<Anchor> &anchors, const std::vector<size_t> &aids, long long sep_limit) const;
 	
 

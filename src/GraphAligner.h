@@ -330,7 +330,7 @@ public:
 			Ai.push_back(realOffset);
 		}
 
-		std::vector<size_t> ret = params.graph.colinearChaining(A, Ai, -1, true);
+		std::vector<size_t> ret = params.graph.colinearChaining(A, -1, true);
 		std::vector<SeedHit> tmp;
 		for (LL i : ret)
 			tmp.push_back(seedHits[i]);

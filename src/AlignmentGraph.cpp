@@ -1710,7 +1710,7 @@ struct Treap {
 	}
 };
 
-std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, const std::vector<size_t> &Ai, long long sep_limit, bool symmetric_chaining = false) const {
+std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &A, long long sep_limit, bool symmetric_chaining = false) const {
 	std::vector<std::pair<size_t, size_t>> cs(A.size());
 	for (size_t i = 0; i < A.size(); i++) {
 		cs[i].first = component_map[A[i].path.back()];
@@ -1727,7 +1727,7 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 		
 		if (symmetric_chaining) {
 			std::cout << "Using symmetric chaining" << std::endl;
-			tmp = symmetricColinearChainingByComponent(cs[i].first, A, Ai, aids, sep_limit);
+			tmp = symmetricColinearChainingByComponent(cs[i].first, A, aids, sep_limit);
 		} else {
 			std::cout << "Using asymmetric chaining" << std::endl;
 			tmp = colinearChainingByComponent(cs[i].first, A, aids, sep_limit);
@@ -1742,7 +1742,7 @@ std::vector<size_t> AlignmentGraph::colinearChaining(const std::vector<Anchor> &
 	return best.first;
 }
 
-std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &Ai, const std::vector<size_t> &aids, long long sep_limit) const {
+std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &aids, long long sep_limit) const {
 	const std::vector<size_t> &cids = component_ids[cid]; // nodes in the current component
 	size_t N = cids.size(); // size of the component
 	long long K = mpc[cid].size(); // number of path in the path cover
@@ -1805,20 +1805,20 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 					C[j] = std::max(C[j], {q.first + kappa, q.second});
 					q = Tb[k].RMQ(A[j].x, A[j].y); // case b
 					C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
-					q = Tc[k].RMQ(default_value.first, A[j].x - Ai[j]); // case c
-					C[j] = std::max(C[j], {Ai[j] + q.first + kappa, q.second});
-					q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
+					q = Tc[k].RMQ(default_value.first, A[j].x - A[j].i); // case c
+					C[j] = std::max(C[j], {A[j].i + q.first + kappa, q.second});
+					q = Td[k].RMQ(A[j].x - A[j].i + 1, std::numeric_limits<long long>::max()); // case d
 					C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
 
 					std::cout << "-> For node " << v << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
 
-					Tc[k].add(A[j].x - Ai[j], {C[j].first - kappa - Ai[j], j});
-					Td[k].add(A[j].x - Ai[j], {C[j].first - kappa - A[j].x, j});
+					Tc[k].add(A[j].x - A[j].i, {C[j].first - kappa - A[j].i, j});
+					Td[k].add(A[j].x - A[j].i, {C[j].first - kappa - A[j].x, j});
 				} else {
 					Ta[k].add(A[j].y, {C[j].first, j});
 					Tb[k].add(A[j].y, {C[j].first - kappa - A[j].x, j});
-					Tc[k].add(A[j].x - Ai[j], {default_value.first, j});
-					Td[k].add(A[j].x - Ai[j], {default_value.first, j});
+					Tc[k].add(A[j].x - A[j].i, {default_value.first, j});
+					Td[k].add(A[j].x - A[j].i, {default_value.first, j});
 				}
 			}
 		}
@@ -1842,9 +1842,9 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 				q = Tb[k].RMQ(A[j].x, A[j].y); // case b
 				C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
 				// needed for propagate forward ??
-				q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - Ai[j]); // case c
-				C[j] = std::max(C[j], {Ai[j] + q.first + kappa, q.second});
-				q = Td[k].RMQ(A[j].x - Ai[j] + 1, std::numeric_limits<long long>::max()); // case d
+				q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - A[j].i); // case c
+				C[j] = std::max(C[j], {A[j].i + q.first + kappa, q.second});
+				q = Td[k].RMQ(A[j].x - A[j].i + 1, std::numeric_limits<long long>::max()); // case d
 				C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
 
 				std::cout << "-> For node " << w << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
