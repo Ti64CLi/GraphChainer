@@ -112,6 +112,7 @@ public:
 	struct Anchor {
 		std::vector<size_t> path;
 		size_t x, y;
+		size_t i, j;
 	};
 	void buildMPC();
 	void buildComponentsMap();
