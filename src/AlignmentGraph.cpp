@@ -1822,7 +1822,7 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 					C[j] = std::max(C[j], {q.first + kappa, q.second});
 					q = Tb[k].RMQ(A[j].x, A[j].y); // case b
 					C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
-					q = Tc[k].RMQ(default_value.first, A[j].x - A[j].i); // case c
+					q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - A[j].i); // case c
 					C[j] = std::max(C[j], {A[j].i + q.first + kappa, q.second});
 					q = Td[k].RMQ(A[j].x - A[j].i + 1, std::numeric_limits<long long>::max()); // case d
 					C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
@@ -1834,8 +1834,8 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 				} else {
 					Ta[k].upgrade(A[j].y, {C[j].first, j});
 					Tb[k].upgrade(A[j].y, {C[j].first - kappa - A[j].x, j});
-					Tc[k].update(A[j].x - A[j].i, {default_value.first, j});
-					Td[k].update(A[j].x - A[j].i, {default_value.first, j});
+					Tc[k].update(A[j].x - A[j].i, {std::numeric_limits<long long>::min(), j});
+					Td[k].update(A[j].x - A[j].i, {std::numeric_limits<long long>::min(), j});
 				}
 			}
 		}
