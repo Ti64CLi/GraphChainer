@@ -689,6 +689,7 @@ void runComponentMappings(const AlignmentGraph& alignmentGraph, moodycamel::Conc
 						// 	tmp_seeds.back().seqPos -= l;
 						// }
 						if (seeder.mode != Seeder::Mode::None) {
+							std::cout << "Trying to align with seeds..." << std::endl;
 							alignments = AlignOneWay(alignmentGraph, name, seq, params.initialBandwidth, params.rampBandwidth, params.maxCellsPerSlice, !params.verboseMode, !params.tryAllSeeds, seeds, reusableState, !params.highMemory, params.forceGlobal, params.preciseClipping, params.seedClusterMinSize, params.seedExtendDensity, params.nondeterministicOptimizations, params.preciseClippingIdentityCutoff, params.Xdropcutoff, sl, sr, l);
 							// alignments = AlignOneWay(alignmentGraph, name, seq, params.initialBandwidth, params.rampBandwidth, params.maxCellsPerSlice, !params.verboseMode, !params.tryAllSeeds, tmp_seeds, reusableState, !params.highMemory, params.forceGlobal, params.preciseClipping, params.seedClusterMinSize, params.seedExtendDensity, params.nondeterministicOptimizations, params.preciseClippingIdentityCutoff, params.Xdropcutoff, 0, tmp_seeds.size(), 0);
 						}
