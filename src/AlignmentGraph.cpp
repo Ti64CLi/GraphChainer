@@ -1660,18 +1660,35 @@ struct Treap {
 			update(y);
 		}
 	}
-	// void Del(int &root, int key) {
-	// 	int x = 0, y = 0, z = 0;
-	// 	split(root, key, x, z);
-	// 	split(x, key - 1, x, y);
-	// 	y = merge(t[y].ls, t[y].rs);
-	// 	root = merge(merge(x, y), z);
-	// }
+	/*
+	void Del(int &root, int key) {
+	 	int x = 0, y = 0, z = 0;
+	 	split(root, key, x, z);
+	 	split(x, key - 1, x, y);
+	 	y = merge(t[y].ls, t[y].rs);
+	 	root = merge(merge(x, y), z);
+	}
+	*/
+	void del(T key) {
+	 	int x = 0, y = 0, z = 0;
+	 	split(root, key, x, z); // split Treap according to key (left=x contains all value <= key and right=z contains all value > key)
+	 	split(x, key - 1, x, y); // split x according to key-1 : now left=x contains all value < key and right=y contains key as its root
+	 	root = merge(x, z); // merge treap<key and treap>key
+	}
 	void add(T key, V value) {
 		int x = 0, y = 0, z = 0;
 		split(root, key, x, y);
 		root = merge(merge(x, new_node(key, value)), y);
-	}	
+	}
+
+	void upgrade(T key, V value) {
+		add(key, value);
+	}
+	void update(T key, V value) {
+		del(key);
+		add(key, value);
+	}
+
 	V RMQ(T l, T r) {
 		int now = root;
 		while (now != 0 && (t[now].key < l || t[now].key > r)) {
@@ -1747,10 +1764,10 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 	size_t N = cids.size(); // size of the component
 	long long K = mpc[cid].size(); // number of path in the path cover
 
-	std::pair<long long, long long> default_value = {-N*2/*std::numeric_limits<long long>::min()*/, -1}; // default value in the balanced binary tree search
-	for (size_t j : aids) {
-		default_value.first -= (A[j].y + 1 - A[j].x) * 2; // default_value -= 2 * kappa[j] where kappa[j] = kappa for anchor j
-	}
+	std::pair<long long, long long> default_value = {std::numeric_limits<long long>::min(), -1}; // default value in the balanced binary tree search
+	//for (size_t j : aids) {
+	//	default_value.first -= (A[j].y + 1 - A[j].x) * 2; // default_value -= 2 * kappa[j] where kappa[j] = kappa for anchor j
+	//}
 	// defaul_value should now correspond to -inf, meaning be lower than all possible added later values
 
 	typedef Treap<long long, std::pair<long long, long long>> IndexT; // search tree type
@@ -1760,7 +1777,7 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 	std::vector<std::pair<long long, long long>> C(A.size());
 
 	for (size_t j : aids) {
-		vertices.push_back({component_idx[A[j].path[0]], {j, -1}});
+		vertices.push_back({component_idx[A[j].path[0]], {j, -2}});
 
 		for (std::pair<long long, long long> b : backwards[cid][component_idx[A[j].path[0]]]) { // for propagation
 			vertices.push_back({b.first, {j, b.second}});
@@ -1812,13 +1829,13 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 
 					std::cout << "-> For node " << v << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
 
-					Tc[k].add(A[j].x - A[j].i, {C[j].first - kappa - A[j].i, j});
-					Td[k].add(A[j].x - A[j].i, {C[j].first - kappa - A[j].x, j});
+					Tc[k].upgrade(A[j].x - A[j].i, {C[j].first - kappa - A[j].i, j});
+					Td[k].upgrade(A[j].x - A[j].i, {C[j].first - kappa - A[j].x, j});
 				} else {
-					Ta[k].add(A[j].y, {C[j].first, j});
-					Tb[k].add(A[j].y, {C[j].first - kappa - A[j].x, j});
-					Tc[k].add(A[j].x - A[j].i, {default_value.first, j});
-					Td[k].add(A[j].x - A[j].i, {default_value.first, j});
+					Ta[k].upgrade(A[j].y, {C[j].first, j});
+					Tb[k].upgrade(A[j].y, {C[j].first - kappa - A[j].x, j});
+					Tc[k].update(A[j].x - A[j].i, {default_value.first, j});
+					Td[k].update(A[j].x - A[j].i, {default_value.first, j});
 				}
 			}
 		}
@@ -1842,10 +1859,10 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 				q = Tb[k].RMQ(A[j].x, A[j].y); // case b
 				C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
 				// needed for propagate forward ??
-				q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - A[j].i); // case c
+				/*q = Tc[k].RMQ(std::numeric_limits<long long>::min(), A[j].x - A[j].i); // case c
 				C[j] = std::max(C[j], {A[j].i + q.first + kappa, q.second});
 				q = Td[k].RMQ(A[j].x - A[j].i + 1, std::numeric_limits<long long>::max()); // case d
-				C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});
+				C[j] = std::max(C[j], {A[j].x + q.first + kappa, q.second});*/
 
 				std::cout << "-> For node " << w << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
 			}
@@ -1871,6 +1888,158 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::symmetricColinearChaining
 	std::reverse(ret.begin(), ret.end());
 	return {ret, best.first};
 
+	/*typedef long long LL;
+	auto getSortedMap = [&](std::vector<LL> a) {
+		std::sort(a.begin(), a.end());
+		a.erase(std::unique(a.begin(), a.end()), a.end());
+		std::unordered_map<LL, LL> ret;
+		for (LL i = 0; i < a.size(); i++)
+			ret[a[i]] = i;
+		return ret;
+	};
+	const std::vector<size_t> &cids = component_ids[cid];
+	size_t N = cids.size();
+
+	LL K = mpc[cid].size();
+	std::pair<LL, LL> defaul_value = { std::numeric_limits<LL>::min(), -1 };
+	//for (size_t j : aids) {
+	//	defaul_value.first -= (A[j].y + 1 - A[j].x) * 2;
+	//}
+	// std::cerr <<"defaul_value "<<defaul_value.first<<std::endl;
+	typedef Treap<LL, std::pair<LL, LL>> IndexT;
+	// std::vector<SegmentTree<std::pair<LL, LL>>> T(K, SegmentTree(N, defaul_value)), I(K, SegmentTree(N, defaul_value));
+	std::vector<IndexT> T(K, IndexT(defaul_value)), I(K, IndexT(defaul_value)), Tc(K, IndexT(defaul_value)), Td(K, IndexT(defaul_value));
+	// std::vector<std::vector<LL>> starts(N), ends(N);
+	std::vector<std::pair<LL, std::pair<LL, LL>>> endpoints;
+	std::vector<std::pair<LL, LL>> C(A.size());
+	for (size_t j : aids) {
+		endpoints.push_back({ component_idx[A[j].path[0]], {j, -1} });
+		endpoints.push_back({ component_idx[A[j].path.back()], {j, -2} });
+		for (std::pair<LL, LL> b : backwards[cid][component_idx[A[j].path[0]]]) {
+			endpoints.push_back({b.first, {j, b.second}});
+			// std::cerr << "  A " << j << " back " << b.first << " " << b.second << std::endl;
+		}
+		C[j] = { A[j].y - A[j].x + 1, -1 };
+		// std::cerr << "  A " << j << " " << A[j].path[0] << " " << A[j].path[1] << " -> " << component_idx[A[j].path[0]] << " " << component_idx[A[j].path.back()] << std::endl;
+	}
+	std::sort(endpoints.begin(), endpoints.end(), [&](const std::pair<LL, std::pair<LL, LL>> &p1, const std::pair<LL, std::pair<LL, LL>> &p2){
+		return topo_ids[cid][p1.first] < topo_ids[cid][p2.first];
+	});
+	// for (LL vidx = 0; vidx < N; vidx++) {
+	// 	LL v = topo[vidx];
+	for (LL vidx = 0, ridx = 0; vidx < endpoints.size(); vidx = ridx) {
+		// if (vidx > 0 && endpoints[vidx - 1] == endpoints[vidx])
+		// 	continue;
+		LL v = endpoints[vidx].first; 
+		ridx = vidx + 1;
+		while (ridx < endpoints.size() && endpoints[ridx].first == v)
+			ridx++;
+		std::cerr <<"Topo : now v="<<v<< " topoidx "<< topo_ids[cid][v] << " " << vidx << " " << ridx << "  " << std::endl;
+		std::vector<LL> ids;
+		for (size_t j = vidx; j < ridx; j++)
+			if (endpoints[j].second.second < 0)
+				ids.push_back(endpoints[j].second.first);
+		if (ids.size() > 0) {
+			std::sort(ids.begin(), ids.end(), [&](LL i, LL j) { 
+				if (A[i].y != A[j].y)
+					return A[i].y < A[j].y;
+				return A[i].x < A[j].x;
+			});
+			ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+			// get local id count
+			std::vector<LL> pos = { 0 };
+			for (LL j : ids) {
+				pos.push_back(A[j].x - 1);
+				pos.push_back(A[j].x);
+				pos.push_back(A[j].y - 1);
+				pos.push_back(A[j].y);
+				pos.push_back(A[j].x - A[j].i);
+				pos.push_back(A[j].x - A[j].i + 1);
+				pos.push_back(std::numeric_limits<LL>::min());
+				pos.push_back(std::numeric_limits<LL>::max());
+			}
+			auto id_map = getSortedMap(pos);
+			LL Size = (LL)id_map.size();
+			// IndexT tmpT(Size, defaul_value), tmpI(Size, defaul_value);
+			IndexT tmpT(defaul_value), tmpI(defaul_value), tmpTc(defaul_value), tmpTd(defaul_value);
+			for (LL j : ids) {
+				if (component_idx[A[j].path[0]] == v) {
+					std::pair<LL, LL> q = tmpT.RMQ(id_map[0], id_map[A[j].x - 1]);
+					// if (q.second!=-1)std::cerr << "C " << j << "updates A " << C[j].first << " " << C[j].second << " <- " << A[j].y - A[j].x + 1 + q.first << " " << q.second << std::endl;
+					C[j] = std::max(C[j], {A[j].y - A[j].x + 1 + q.first, q.second});
+					q = tmpI.RMQ(id_map[A[j].x], id_map[A[j].y - 1]);
+					// if (q.second!=-1)std::cerr << "C " << j << "updates B " << C[j].first << " " << C[j].second << " <- " << A[j].y + q.first << " " << q.second << std::endl;
+					C[j] = std::max(C[j], {A[j].y + q.first, q.second});
+					q = tmpTc.RMQ(id_map[std::numeric_limits<LL>::min()], id_map[A[j].x - A[j].i]);
+					C[j] = std::max(C[j], {A[j].j + q.first, q.second});
+					q = tmpTd.RMQ(id_map[A[j].x - A[j].i + 1], id_map[std::numeric_limits<LL>::max()]);
+					C[j] = std::max(C[j], {A[j].y + q.first, q.second});
+
+					tmpTc.add(id_map[A[j].x - A[j].i], {C[j].first - A[j].j, j});
+					tmpTd.add(id_map[A[j].x - A[j].i], {C[j].first - A[j].y, j});
+
+					std::cout << "-> For node " << v << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
+				}
+				if (component_idx[A[j].path.back()] == v) {
+					tmpT.add(id_map[A[j].y], {C[j].first, j});
+					tmpI.add(id_map[A[j].y], {C[j].first - A[j].y, j});
+					tmpTc.add(id_map[A[j].x - A[j].i], {std::numeric_limits<LL>::min(), j});
+					tmpTd.add(id_map[A[j].x - A[j].i], {std::numeric_limits<LL>::min(), j});
+				}
+			}
+		}
+		for (size_t vi = vidx; vi < ridx; vi++) {
+			if (endpoints[vi].second.second != -2)
+				continue;
+			size_t j = endpoints[vi].second.first;
+			// if (v == component_idx[A[j].path.back()])std::cerr << "add to " << j << std::endl;
+			if (v == component_idx[A[j].path.back()])
+				for (LL k : paths[cid][v]) {
+					T[k].add(A[j].y, {C[j].first, j});
+					I[k].add(A[j].y, {C[j].first - A[j].y, j});
+					Tc[k].add(A[j].x - A[j].i, {std::numeric_limits<LL>::min(), j});
+					Td[k].add(A[j].x - A[j].i, {std::numeric_limits<LL>::min(), j});
+				}
+		}
+		for (size_t vi = vidx; vi < ridx; vi++) {
+			if (endpoints[vi].second.second < 0)
+				continue;
+			size_t j = endpoints[vi].second.first;
+			LL u = component_idx[A[j].path[0]], k = endpoints[vi].second.second;
+			std::pair<LL, LL> q = T[k].RMQ(0, A[j].x - 1);
+			// if (q.second!=-1)std::cerr << "C " << j << "updates C " << C[j].first << " " << C[j].second << " <- " << A[j].y - A[j].x + 1 + q.first << " " << q.second << std::endl;
+			C[j] = std::max(C[j], {A[j].y - A[j].x + 1 + q.first, q.second}); 
+			q = I[k].RMQ(A[j].x, A[j].y - 1);
+			// if (q.second!=-1)std::cerr << "C " << j << "updates D " << C[j].first << " " << C[j].second << " <- " << A[j].y + q.first << " " << q.second << std::endl;
+			C[j] = std::max(C[j], {A[j].y + q.first, q.second});
+			q = Tc[k].RMQ(std::numeric_limits<LL>::min(), A[j].x - A[j].i);
+			C[j] = std::max(C[j], {A[j].j + q.first, q.second});
+			q = Td[k].RMQ(A[j].x - A[j].i + 1, std::numeric_limits<LL>::max());
+			C[j] = std::max(C[j], {A[j].y + q.first, q.second});
+
+			Tc[k].add(A[j].x - A[j].i, {C[j].first - A[j].j, j});
+			Td[k].add(A[j].x - A[j].i, {C[j].first - A[j].y, j});
+
+			std::cout << "-> For node " << v << " in path " << k << " : C[" << j << "] = {" << C[j].first << ", " << C[j].second << "}" << std::endl;
+		}
+	}
+	std::pair<LL, LL> best = {0, -1};
+	for (size_t j : aids) 
+		best = std::max(best, { C[j].first, j });
+	// std::cerr << "optimal coverage : " << best.first << std::endl;
+	// std::cerr << "optimal ends : " << best.second << std::endl;
+	std::vector<size_t> ret;
+	for (LL i = best.second; i != -1; i = C[i].second) {
+		std::cout << "-> From C[" << i << "] (" << C[i].first << ") to C[" << C[i].second << "]" << std::endl;
+		ret.push_back(i);
+		// std::cerr << "now " << i << "  " << C[i].first << " "  << C[i].second << endl;
+		if (i == C[i].second) {
+			std::cerr << "error, loops in C[j] : " << i << "  " << C[i].first << " "  << C[i].second << std::endl;
+			break;
+		}
+	}
+	std::reverse(ret.begin(), ret.end());
+	return { ret, best.first };*/
 }
 
 std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByComponent(size_t cid, const std::vector<Anchor> &A, const std::vector<size_t> &aids, long long sep_limit) const {
@@ -1887,9 +2056,9 @@ std::pair<std::vector<size_t>, size_t> AlignmentGraph::colinearChainingByCompone
 	size_t N = cids.size();
 
 	LL K = mpc[cid].size();
-	std::pair<LL, LL> defaul_value = { -N*2, -1 };
+	std::pair<LL, LL> defaul_value = { -N*4, -1 };
 	for (size_t j : aids) {
-		defaul_value.first -= (A[j].y + 1 - A[j].x) * 2;
+		defaul_value.first -= (A[j].y + 1 - A[j].x) * 4;
 	}
 	// std::cerr <<"defaul_value "<<defaul_value.first<<std::endl;
 	typedef Treap<LL, std::pair<LL, LL>> IndexT;
