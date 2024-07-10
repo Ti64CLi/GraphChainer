@@ -211,7 +211,7 @@ int main(int argc, char** argv)
 			std::cout << "Using MEM seeds" << std::endl;
 			params.mumCount = 0;
 			params.memCount = std::numeric_limits<size_t>::max();
-			params.mxmLength = 2;
+			params.mxmLength = 1;
 			params.minimizerSeedDensity = 0;
 			params.seedFiles.clear();
 			params.seederCachePrefix = "current_mem";
