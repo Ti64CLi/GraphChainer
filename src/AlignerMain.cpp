@@ -107,6 +107,7 @@ int main(int argc, char** argv)
 		("greedy-score", "greedily select a non-overlapping alignment set based on alignment score")
 		("no-colinear-chaining", "do not run colinear chaining and align as in GraphAligner, default parameters")
 		("symmetric-colinear-chaining", "use the symmetric verion of colinear chainin (default is asymmetric)")
+		("use-mem", "use MEM seeds for colinear chaining (default is ussing all seed types)")
 	;
 
 	boost::program_options::options_description cmdline_options;
@@ -206,7 +207,18 @@ int main(int argc, char** argv)
 			params.symmetricColinearChaining = true;
 		}
 		params.alignmentSelectionMethod = AlignmentSelection::SelectionMethod::All;
-		params.tryAllSeeds = true;
+		if (vm.count("use-mem")) {
+			std::cout << "Using MEM seeds" << std::endl;
+			params.mumCount = 0;
+			params.memCount = std::numeric_limits<size_t>::max();
+			params.mxmLength = 2;
+			params.minimizerSeedDensity = 0;
+			params.seedFiles.clear();
+			params.seederCachePrefix = "current_mem";
+		} else {
+			params.tryAllSeeds = true;
+		}
+
 		params.colinearGap = 10000;
 		params.colinearSplitLen = 35;
 		params.colinearSplitGap = 35;
